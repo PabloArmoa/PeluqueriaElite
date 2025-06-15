@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva tu Turno - Peluquería</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Modern Grey-Blue Accent -->
+    <!-- Application Structure Plan: The SPA is designed as a multi-stage booking process within a single page. It features two main interactive sections (Services and Date/Time) presented side-by-side on desktop, stacking on mobile. A floating "Resumen y Confirmar" button provides a persistent call to action, leading to a dynamic summary and a simulated payment modal. A new section for user contact details (name, last name) is added. The administrator panel is now password-protected, enhancing security by requiring a simple password input to toggle its visibility. This structure allows distinct user flows (client vs. admin) within a single page for simplicity, with enhanced data collection and access control. -->
+    <!-- Visualization & Content Choices: 1. Report Info: Servicios y Precios. Goal: Inform/Organize. Viz/Method: Interactive list of services with checkboxes. Interaction: Checkbox toggles selection, updating total price. Justification: Intuitive for multiple selections. Library: HTML/Tailwind/Vanilla JS. 2. Report Info: Selección de Fecha y Hora. Goal: Organize/Filter. Viz/Method: Interactive calendar grid and time slot buttons. Interaction: Clicking date/time updates selection and summary. Justification: Standard, user-friendly booking method. Library: Vanilla JS. 3. Report Info: Datos del Usuario. Goal: Collect. Viz/Method: Text input fields. Interaction: User enters name/last name, enabling confirmation. Justification: Essential for identifying bookings. Library: HTML/Tailwind/Vanilla JS. 4. Report Info: Resumen del Turno. Goal: Inform/Confirm. Viz/Method: Dynamic text summary. Interaction: Updates in real-time as services/date/time are chosen. Justification: Provides immediate feedback to the user on their selections. Library: Vanilla JS. 5. Report Info: Confirmación y Pago. Goal: Inform/Action. Viz/Method: Modal dialog with final summary, simulated payment button, and status messages. Interaction: Click to "simulate" payment; displays success/error. Justification: Simulates the critical final step of a booking app. Library: Vanilla JS. 6. Report Info: Acceso al Administrador. Goal: Secure. Viz/Method: Password input field. Interaction: User enters password to unlock admin view. Justification: Basic security gate. Library: HTML/Tailwind/Vanilla JS. 7. Report Info: Reservas y Pagos del Administrador. Goal: Inform/Monitor. Viz/Method: Dynamic table of bookings. Interaction: Toggles visibility of the admin panel; displays booking details and payment status, including client names. Justification: Allows the administrator to see a summary of all simulated bookings with more client detail. Library: HTML/Tailwind/Vanilla JS. CONFIRMATION: NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .service-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .service-item:last-child {
+            border-bottom: none;
+        }
+        input[type="checkbox"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 2px solid #a0aec0;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            outline: none;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        input[type="checkbox"]:checked {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            position: relative;
+        }
+        input[type="checkbox"]:checked::after {
+            content: '✓';
+            color: white;
+            font-size: 1rem;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .calendar-day {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .calendar-day:hover:not(.empty):not(.selected):not(.disabled) {
+            background-color: #e0f2fe;
+        }
+        .calendar-day.selected {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: 600;
+        }
+        .calendar-day.empty {
+            visibility: hidden;
+            cursor: default;
+        }
+        .calendar-day.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .time-slot-button {
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            background-color: #f9fafb;
+            color: #4b5563;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+        }
+        .time-slot-button:hover:not(.selected):not(.unavailable) {
+            background-color: #e0f2fe;
+            border-color: #93c5fd;
+        }
+        .time-slot-button.selected {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        .time-slot-button.unavailable {
+            background-color: #fca5a5;
+            color: #ef4444;
+            border-color: #ef4444;
+            cursor: not-allowed;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .fixed-bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: white;
+            box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.1), 0 -2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1rem;
+            z-index: 1000;
+            transition: transform 0.3s ease-out;
+            transform: translateY(100%); /* Start hidden */
+        }
+        .fixed-bottom-bar.show {
+            transform: translateY(0);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            max-width: 90%;
+            width: 500px;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease-out;
+        }
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .admin-panel {
+            display: none; /* Hidden by default */
+        }
+        .admin-panel.show {
+            display: block;
+        }
+        .admin-login-area {
+            display: none; /* Hidden by default */
+        }
+        .admin-login-area.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Reserva tu Turno</h1>
+            <p class="text-lg text-gray-600 mt-2">Peluquería "El Estilo"</p>
+            <button id="toggleAdminViewBtn" class="mt-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full transition-colors duration-300 text-sm">
+                Cambiar a Vista de Administrador
+            </button>
+
+            <!-- Área de Inicio de Sesión de Administrador -->
+            <div id="adminLoginArea" class="admin-login-area hidden flex-col md:flex-row items-center justify-center gap-3 mt-4 p-4 bg-white rounded-lg shadow">
+                <input type="password" id="adminPasswordInput" placeholder="Contraseña de Administrador" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-auto">
+                <button id="adminLoginBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300 w-full md:w-auto">
+                    Acceder
+                </button>
+                <p id="adminLoginMessage" class="text-red-500 text-sm mt-2 md:mt-0 hidden">Contraseña incorrecta.</p>
+            </div>
+        </header>
+
+        <!-- Contenido de Usuario (Booking Flow) -->
+        <div id="userView" class="block">
+            <main class="grid lg:grid-cols-2 gap-8 pb-24">
+                <!-- Sección de Servicios -->
+                <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4">1. Elige tus servicios</h2>
+                    <div id="serviceList" class="space-y-2">
+                        <div class="service-item" >
+                            <label class="flex items-center space-x-3 text-lg cursor-pointer">
+                                <input type="checkbox" data-service-id="corte-masculino" data-price="2500">
+                                <span>Corte Masculino</span>
+                            </label>
+                            <span class="font-semibold text-blue-600">$2.500</span>
+                        </div>
+                        <div class="service-item">
+                            <label class="flex items-center space-x-3 text-lg cursor-pointer">
+                                <input type="checkbox" data-service-id="arreglo-barba" data-price="1500">
+                                <span>Arreglo de Barba</span>
+                            </label>
+                            <span class="font-semibold text-blue-600">$1.500</span>
+                        </div>
+                        <div class="service-item">
+                            <label class="flex items-center space-x-3 text-lg cursor-pointer">
+                                <input type="checkbox" data-service-id="corte-barba" data-price="3500">
+                                <span>Corte + Barba</span>
+                            </label>
+                            <span class="font-semibold text-blue-600">$3.500</span>
+                        </div>
+                        <div class="service-item">
+                            <label class="flex items-center space-x-3 text-lg cursor-pointer">
+                                <input type="checkbox" data-service-id="corte-ninos" data-price="2000">
+                                <span>Corte para Niños</span>
+                            </label>
+                            <span class="font-semibold text-blue-600">$2.000</span>
+                        </div>
+                        <div class="service-item">
+                            <label class="flex items-center space-x-3 text-lg cursor-pointer">
+                                <input type="checkbox" data-service-id="lavado" data-price="1000">
+                                <span>Lavado de Cabello</span>
+                            </label>
+                            <span class="font-semibold text-blue-600">$1.000</span>
+                        </div>
+                        <div class="service-item">
+                            <label class="flex items-center space-x-3 text-lg cursor-pointer">
+                                <input type="checkbox" data-service-id="coloracion" data-price="4000">
+                                <span>Coloración</span>
+                            </label>
+                            <span class="font-semibold text-blue-600">$4.000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección de Fecha y Hora -->
+                <div class="card p-6 md:p-8">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4">2. Elige Fecha y Hora</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <button id="prevMonth" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                            <span class="text-2xl">←</span>
+                        </button>
+                        <span id="currentMonthYear" class="text-xl font-semibold text-gray-700"></span>
+                        <button id="nextMonth" class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                            <span class="text-2xl">→</span>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-7 text-center font-medium text-sm text-gray-500 mb-2">
+                        <span>Dom</span>
+                        <span>Lun</span>
+                        <span>Mar</span>
+                        <span>Mié</span>
+                        <span>Jue</span>
+                        <span>Vie</span>
+                        <span>Sáb</span>
+                    </div>
+                    <div id="calendarGrid" class="grid grid-cols-7 gap-1">
+                    </div>
+
+                    <h3 class="text-xl md:text-2xl font-bold mt-8 mb-4">Horarios Disponibles</h3>
+                    <div id="timeSlots" class="flex flex-wrap gap-3">
+                        <p class="text-gray-500" id="noTimeSlotsMessage">Selecciona una fecha para ver los horarios disponibles.</p>
+                    </div>
+                </div>
+
+                <!-- Sección de Datos del Cliente -->
+                <div class="lg:col-span-2 card p-6 md:p-8">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4">3. Tus Datos</h2>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="userNameInput" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                            <input type="text" id="userNameInput" placeholder="Tu Nombre" class="p-3 border border-gray-300 rounded-md w-full focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="userLastNameInput" class="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
+                            <input type="text" id="userLastNameInput" placeholder="Tu Apellido" class="p-3 border border-gray-300 rounded-md w-full focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Barra Inferior de Resumen y Confirmación -->
+            <div id="bottomBar" class="fixed-bottom-bar flex items-center justify-between p-4 md:px-8">
+                <div class="flex flex-col md:flex-row md:items-center">
+                    <div class="text-lg font-bold text-gray-900 md:mr-4">Total: <span id="totalPrice">$0</span></div>
+                    <div class="text-sm text-gray-600" id="selectedSummaryText">
+                        Selecciona servicios, fecha, hora y tus datos.
+                    </div>
+                </div>
+                <button id="confirmBookingBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-full transition-colors duration-300 opacity-50 cursor-not-allowed" disabled>
+                    Confirmar y Pagar
+                </button>
+            </div>
+        </div>
+
+        <!-- Panel de Administración -->
+        <div id="adminView" class="admin-panel hidden bg-gray-50 p-6 md:p-8 rounded-lg shadow-inner">
+            <h2 class="text-3xl font-bold mb-6 text-gray-900">Panel de Administración: Reservas</h2>
+            <p class="text-gray-600 mb-6">Aquí puedes ver todas las reservas simuladas y su estado de pago.</p>
+
+            <div id="adminBookingsList" class="overflow-x-auto">
+                <table class="min-w-full bg-white rounded-lg shadow overflow-hidden">
+                    <thead class="bg-gray-100 border-b">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Reserva</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Servicios</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado Pago</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminBookingsTableBody" class="divide-y divide-gray-200">
+                        <!-- Reservas se renderizarán aquí -->
+                        <tr>
+                            <td colspan="7" class="px-4 py-4 text-center text-gray-500">No hay reservas para mostrar. Realiza algunas simulaciones de pago.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal de Confirmación y Pago -->
+    <div id="paymentModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Confirmar Turno y Pagar</h2>
+            <div class="space-y-3 mb-6">
+                <p class="text-lg font-semibold">Cliente:</p>
+                <p id="modalClientName" class="text-gray-700"></p>
+                <p class="text-lg font-semibold">Servicios Seleccionados:</p>
+                <ul id="modalServiceSummary" class="list-disc list-inside text-gray-700"></ul>
+                <p class="text-lg font-semibold mt-4">Fecha y Hora:</p>
+                <p id="modalDateTimeSummary" class="text-gray-700"></p>
+                <div class="text-xl font-bold mt-6 flex justify-between">
+                    <span>Total a Pagar:</span>
+                    <span id="modalTotalPrice"></span>
+                </div>
+            </div>
+            <div id="paymentStatusArea" class="text-center mb-4 hidden">
+                <div id="paymentSpinner" class="spinner mx-auto mb-2 hidden"></div>
+                <p id="paymentMessage" class="text-lg font-medium"></p>
+                <p id="bookingIdDisplay" class="text-sm text-gray-500 mt-1 hidden"></p>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button id="closeModalBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full transition-colors duration-300">
+                    Cerrar
+                </button>
+                <button id="simulatePaymentBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition-colors duration-300">
+                    Simular Pago con Mercado Pago
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Elementos HTML ---
+            const toggleAdminViewBtn = document.getElementById('toggleAdminViewBtn');
+            const userView = document.getElementById('userView');
+            const adminView = document.getElementById('adminView');
+            const adminLoginArea = document.getElementById('adminLoginArea');
+            const adminPasswordInput = document.getElementById('adminPasswordInput');
+            const adminLoginBtn = document.getElementById('adminLoginBtn');
+            const adminLoginMessage = document.getElementById('adminLoginMessage');
+
+            const serviceCheckboxes = document.querySelectorAll('#serviceList input[type="checkbox"]');
+            const calendarGrid = document.getElementById('calendarGrid');
+            const currentMonthYear = document.getElementById('currentMonthYear');
+            const prevMonthBtn = document.getElementById('prevMonth');
+            const nextMonthBtn = document.getElementById('nextMonth');
+            const timeSlotsContainer = document.getElementById('timeSlots');
+            const noTimeSlotsMessage = document.getElementById('noTimeSlotsMessage');
+
+            const userNameInput = document.getElementById('userNameInput');
+            const userLastNameInput = document.getElementById('userLastNameInput');
+
+            const bottomBar = document.getElementById('bottomBar');
+            const totalPriceElement = document.getElementById('totalPrice');
+            const selectedSummaryText = document.getElementById('selectedSummaryText');
+            const confirmBookingBtn = document.getElementById('confirmBookingBtn');
+
+            const paymentModalOverlay = document.getElementById('paymentModalOverlay');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const modalClientName = document.getElementById('modalClientName');
+            const modalServiceSummary = document.getElementById('modalServiceSummary');
+            const modalDateTimeSummary = document.getElementById('modalDateTimeSummary');
+            const modalTotalPrice = document.getElementById('modalTotalPrice');
+            const simulatePaymentBtn = document.getElementById('simulatePaymentBtn');
+            const paymentStatusArea = document.getElementById('paymentStatusArea');
+            const paymentSpinner = document.getElementById('paymentSpinner');
+            const paymentMessage = document.getElementById('paymentMessage');
+            const bookingIdDisplay = document.getElementById('bookingIdDisplay');
+            const adminBookingsTableBody = document.getElementById('adminBookingsTableBody');
+
+            // --- Estado Global ---
+            let selectedServices = [];
+            let currentTotal = 0;
+            let currentDisplayDate = new Date();
+            let selectedDate = null;
+            let selectedTime = null;
+            let userName = '';
+            let userLastName = '';
+            let mockBookings = []; // Almacena las reservas simuladas
+
+            const ADMIN_PASSWORD = "admin123"; // Contraseña de administrador simulada
+
+            // --- Datos Dummy (reemplazar con datos de backend reales) ---
+            const servicePrices = {
+                'corte-masculino': { name: 'Corte Masculino', price: 2500 },
+                'arreglo-barba': { name: 'Arreglo de Barba', price: 1500 },
+                'corte-barba': { name: 'Corte + Barba', price: 3500 },
+                'corte-ninos': { name: 'Corte para Niños', price: 2000 },
+                'lavado': { name: 'Lavado de Cabello', price: 1000 },
+                'coloracion': { name: 'Coloración', price: 4000 }
+            };
+
+            const availableTimes = {
+                '2025-06-15': ['10:00', '11:00', '12:00', '15:00'],
+                '2025-06-16': ['09:00', '10:00', '11:00', '13:00', '14:00', '16:00'],
+                '2025-06-17': ['10:00', '11:00', '12:00'],
+                '2025-06-18': ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'],
+                '2025-06-19': ['10:00', '11:00', '12:00', '13:00'],
+                '2025-06-20': ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00'],
+                '2025-06-21': ['10:00', '11:00', '12:00', '15:00'],
+                '2025-06-22': ['10:00', '11:00'],
+                '2025-06-23': ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'],
+                '2025-06-24': ['10:00', '11:00', '12:00', '13:00'],
+                '2025-06-25': ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00'],
+                '2025-06-26': ['10:00', '11:00', '12:00', '15:00'],
+                '2025-06-27': ['09:00', '10:00', '11:00', '13:00', '14:00', '16:00'],
+                '2025-06-28': ['10:00', '11:00', '12:00'],
+                '2025-06-29': ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'],
+                '2025-06-30': ['10:00', '11:00', '12:00', '13:00'],
+            };
+
+            // --- Funciones de Actualización de UI de Usuario ---
+            function updateServiceSelection() {
+                selectedServices = [];
+                currentTotal = 0;
+                serviceCheckboxes.forEach(checkbox => {
+                    if (checkbox.checked) {
+                        const serviceId = checkbox.dataset.serviceId;
+                        const service = servicePrices[serviceId];
+                        selectedServices.push(service);
+                        currentTotal += service.price;
+                    }
+                });
+                totalPriceElement.textContent = `$${currentTotal.toLocaleString('es-AR')}`;
+                updateBottomBar();
+            }
+
+            function renderCalendar() {
+                calendarGrid.innerHTML = '';
+                const year = currentDisplayDate.getFullYear();
+                const month = currentDisplayDate.getMonth();
+                const firstDayOfMonth = new Date(year, month, 1);
+                const lastDayOfMonth = new Date(year, month + 1, 0);
+                const daysInMonth = lastDayOfMonth.getDate();
+                const firstDayOfWeek = firstDayOfMonth.getDay();
+
+                currentMonthYear.textContent = firstDayOfMonth.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+
+                for (let i = 0; i < firstDayOfWeek; i++) {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.classList.add('calendar-day', 'empty');
+                    calendarGrid.appendChild(emptyDiv);
+                }
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayDiv = document.createElement('div');
+                    dayDiv.classList.add('calendar-day');
+                    dayDiv.textContent = day;
+                    const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    dayDiv.dataset.date = dateString;
+
+                    const currentDayDate = new Date(year, month, day);
+                    if (currentDayDate < today) {
+                        dayDiv.classList.add('disabled');
+                    }
+
+                    if (selectedDate && dayDiv.dataset.date === selectedDate.toISOString().split('T')[0]) {
+                        dayDiv.classList.add('selected');
+                    }
+
+                    dayDiv.addEventListener('click', () => {
+                        if (dayDiv.classList.contains('disabled')) return;
+
+                        const prevSelected = calendarGrid.querySelector('.calendar-day.selected');
+                        if (prevSelected) {
+                            prevSelected.classList.remove('selected');
+                        }
+                        dayDiv.classList.add('selected');
+                        selectedDate = new Date(year, month, day);
+                        selectedTime = null;
+
+                        renderTimeSlots(selectedDate);
+                        updateBottomBar();
+                    });
+                    calendarGrid.appendChild(dayDiv);
+                }
+            }
+
+            function renderTimeSlots(date) {
+                timeSlotsContainer.innerHTML = '';
+                noTimeSlotsMessage.classList.add('hidden');
+                const dateString = date.toISOString().split('T')[0];
+                const slots = availableTimes[dateString];
+
+                if (!slots || slots.length === 0) {
+                    timeSlotsContainer.innerHTML = '<p class="text-gray-500">No hay horarios disponibles para esta fecha.</p>';
+                    return;
+                }
+
+                slots.forEach(slot => {
+                    const button = document.createElement('button');
+                    button.classList.add('time-slot-button');
+                    button.textContent = slot;
+                    button.dataset.time = slot;
+
+                    if (selectedTime === slot) {
+                        button.classList.add('selected');
+                    }
+
+                    button.addEventListener('click', () => {
+                        const prevSelected = timeSlotsContainer.querySelector('.time-slot-button.selected');
+                        if (prevSelected) {
+                            prevSelected.classList.remove('selected');
+                        }
+                        button.classList.add('selected');
+                        selectedTime = slot;
+                        updateBottomBar();
+                    });
+                    timeSlotsContainer.appendChild(button);
+                });
+            }
+
+            function updateUserDetails() {
+                userName = userNameInput.value.trim();
+                userLastName = userLastNameInput.value.trim();
+                updateBottomBar();
+            }
+
+            function updateBottomBar() {
+                if (selectedServices.length > 0 && selectedDate && selectedTime && userName && userLastName) {
+                    selectedSummaryText.textContent = `${selectedServices.length} servicios, ${selectedDate.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })} a las ${selectedTime}`;
+                    confirmBookingBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    confirmBookingBtn.disabled = false;
+                    bottomBar.classList.add('show');
+                } else {
+                    let text = [];
+                    if (selectedServices.length === 0) text.push('servicios');
+                    if (!selectedDate) text.push('fecha');
+                    if (!selectedTime) text.push('hora');
+                    if (!userName || !userLastName) text.push('tus datos');
+                    selectedSummaryText.textContent = `Selecciona ${text.join(', ')}.`;
+                    confirmBookingBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    confirmBookingBtn.disabled = true;
+                    bottomBar.classList.add('show');
+                }
+            }
+
+            // --- Funciones del Modal de Pago ---
+            function openPaymentModal() {
+                modalClientName.textContent = `${userName} ${userLastName}`;
+                modalServiceSummary.innerHTML = '';
+                selectedServices.forEach(service => {
+                    const li = document.createElement('li');
+                    li.textContent = `${service.name} ($${service.price.toLocaleString('es-AR')})`;
+                    modalServiceSummary.appendChild(li);
+                });
+
+                modalDateTimeSummary.textContent = `${selectedDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} a las ${selectedTime}`;
+                modalTotalPrice.textContent = `$${currentTotal.toLocaleString('es-AR')}`;
+
+                paymentStatusArea.classList.add('hidden');
+                paymentSpinner.classList.add('hidden');
+                paymentMessage.textContent = '';
+                bookingIdDisplay.classList.add('hidden');
+                simulatePaymentBtn.disabled = false;
+                simulatePaymentBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                simulatePaymentBtn.textContent = 'Simular Pago con Mercado Pago';
+
+                paymentModalOverlay.classList.add('show');
+            }
+
+            function simulatePayment() {
+                simulatePaymentBtn.disabled = true;
+                simulatePaymentBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                simulatePaymentBtn.textContent = 'Procesando pago...';
+                paymentStatusArea.classList.remove('hidden');
+                paymentSpinner.classList.remove('hidden');
+                paymentMessage.textContent = 'Conectando con Mercado Pago...';
+                bookingIdDisplay.classList.add('hidden');
+
+                setTimeout(() => {
+                    paymentSpinner.classList.add('hidden');
+                    const isSuccess = Math.random() > 0.2;
+
+                    if (isSuccess) {
+                        const bookingId = 'MP-' + Math.random().toString(36).substring(2, 11).toUpperCase();
+                        paymentMessage.textContent = '¡Pago Exitoso y Turno Confirmado!';
+                        paymentMessage.classList.remove('text-red-600');
+                        paymentMessage.classList.add('text-green-600');
+                        bookingIdDisplay.textContent = `ID de Reserva: ${bookingId}`;
+                        bookingIdDisplay.classList.remove('hidden');
+
+                        mockBookings.push({
+                            id: bookingId,
+                            clientName: userName,
+                            clientLastName: userLastName,
+                            services: selectedServices.map(s => s.name).join(', '),
+                            date: selectedDate.toLocaleDateString('es-AR'),
+                            time: selectedTime,
+                            total: currentTotal,
+                            paymentStatus: 'Pagado'
+                        });
+                        renderAdminBookings();
+                    } else {
+                        paymentMessage.textContent = 'Error en el pago. Intenta de nuevo.';
+                        paymentMessage.classList.remove('text-green-600');
+                        paymentMessage.classList.add('text-red-600');
+                        bookingIdDisplay.classList.add('hidden');
+                        simulatePaymentBtn.disabled = false;
+                        simulatePaymentBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        simulatePaymentBtn.textContent = 'Reintentar Pago';
+                    }
+                }, 2000);
+            }
+
+            // --- Funciones del Panel de Administración ---
+            function renderAdminBookings() {
+                adminBookingsTableBody.innerHTML = '';
+                if (mockBookings.length === 0) {
+                    adminBookingsTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="px-4 py-4 text-center text-gray-500">No hay reservas para mostrar. Realiza algunas simulaciones de pago.</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                mockBookings.forEach(booking => {
+                    const row = adminBookingsTableBody.insertRow();
+                    row.classList.add('hover:bg-gray-50');
+                    row.innerHTML = `
+                        <td class="px-4 py-4 text-sm font-medium text-gray-900">${booking.id}</td>
+                        <td class="px-4 py-4 text-sm text-gray-600">${booking.clientName} ${booking.clientLastName}</td>
+                        <td class="px-4 py-4 text-sm text-gray-600">${booking.services}</td>
+                        <td class="px-4 py-4 text-sm text-gray-600">${booking.date}</td>
+                        <td class="px-4 py-4 text-sm text-gray-600">${booking.time}</td>
+                        <td class="px-4 py-4 text-sm text-gray-600">$${booking.total.toLocaleString('es-AR')}</td>
+                        <td class="px-4 py-4 text-sm">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${booking.paymentStatus === 'Pagado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${booking.paymentStatus}
+                            </span>
+                        </td>
+                    `;
+                });
+            }
+
+            function toggleAdminView() {
+                if (userView.classList.contains('block')) { // Currently in user view, switch to admin login
+                    userView.classList.remove('block');
+                    userView.classList.add('hidden');
+                    bottomBar.classList.remove('show');
+                    adminLoginArea.classList.add('show'); // Show password input
+                    adminPasswordInput.value = ''; // Clear previous input
+                    adminLoginMessage.classList.add('hidden'); // Hide any previous error
+                    toggleAdminViewBtn.textContent = 'Volver a Vista de Usuario';
+                } else if (adminView.classList.contains('show')) { // Currently in admin view, switch to user view
+                    adminView.classList.remove('show');
+                    adminView.classList.add('hidden');
+                    userView.classList.remove('hidden');
+                    userView.classList.add('block');
+                    adminLoginArea.classList.remove('show');
+                    toggleAdminViewBtn.textContent = 'Cambiar a Vista de Administrador';
+                    updateBottomBar();
+                } else if (adminLoginArea.classList.contains('show')) { // Currently in login prompt, switch back to user view
+                    adminLoginArea.classList.remove('show');
+                    userView.classList.remove('hidden');
+                    userView.classList.add('block');
+                    toggleAdminViewBtn.textContent = 'Cambiar a Vista de Administrador';
+                    updateBottomBar();
+                }
+            }
+
+            function handleAdminLogin() {
+                const enteredPassword = adminPasswordInput.value;
+                if (enteredPassword === ADMIN_PASSWORD) {
+                    adminLoginArea.classList.remove('show');
+                    adminView.classList.add('show');
+                    adminLoginMessage.classList.add('hidden');
+                    renderAdminBookings();
+                } else {
+                    adminLoginMessage.classList.remove('hidden');
+                }
+            }
+
+
+            // --- Event Listeners ---
+            toggleAdminViewBtn.addEventListener('click', toggleAdminView);
+            adminLoginBtn.addEventListener('click', handleAdminLogin);
+            adminPasswordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleAdminLogin();
+                }
+            });
+
+            serviceCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateServiceSelection);
+            });
+            prevMonthBtn.addEventListener('click', () => {
+                currentDisplayDate.setMonth(currentDisplayDate.getMonth() - 1);
+                renderCalendar();
+            });
+            nextMonthBtn.addEventListener('click', () => {
+                currentDisplayDate.setMonth(currentDisplayDate.getMonth() + 1);
+                renderCalendar();
+            });
+            userNameInput.addEventListener('input', updateUserDetails);
+            userLastNameInput.addEventListener('input', updateUserDetails);
+
+            confirmBookingBtn.addEventListener('click', openPaymentModal);
+            closeModalBtn.addEventListener('click', () => {
+                paymentModalOverlay.classList.remove('show');
+            });
+            simulatePaymentBtn.addEventListener('click', simulatePayment);
+
+            // --- Inicialización ---
+            renderCalendar();
+            updateServiceSelection(); // Initial update for services and total
+            updateUserDetails(); // Initial update for user details and bottom bar
+            renderAdminBookings(); // Initial render for admin panel (will show "No hay reservas")
+        });
+    </script>
+</body>
+</html>
