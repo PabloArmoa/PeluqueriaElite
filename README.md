@@ -8,24 +8,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Modern Grey-Blue Accent -->
-    <!-- Application Structure Plan: The SPA is designed as a multi-stage booking process within a single page. It features two main interactive sections (Services and Date/Time) presented side-by-side on desktop, stacking on mobile. A floating "Resumen y Confirmar" button provides a persistent call to action, leading to a dynamic summary and a simulated payment modal. A new section for user contact details (name, last name) is added. The administrator panel is now password-protected, enhancing security by requiring a simple password input to toggle its visibility. This structure allows distinct user flows (client vs. admin) within a single page for simplicity, with enhanced data collection and access control. -->
-    <!-- Visualization & Content Choices: 1. Report Info: Servicios y Precios. Goal: Inform/Organize. Viz/Method: Interactive list of services with checkboxes. Interaction: Checkbox toggles selection, updating total price. Justification: Intuitive for multiple selections. Library: HTML/Tailwind/Vanilla JS. 2. Report Info: Selección de Fecha y Hora. Goal: Organize/Filter. Viz/Method: Interactive calendar grid and time slot buttons. Interaction: Clicking date/time updates selection and summary. Justification: Standard, user-friendly booking method. Library: Vanilla JS. 3. Report Info: Datos del Usuario. Goal: Collect. Viz/Method: Text input fields. Interaction: User enters name/last name, enabling confirmation. Justification: Essential for identifying bookings. Library: HTML/Tailwind/Vanilla JS. 4. Report Info: Resumen del Turno. Goal: Inform/Confirm. Viz/Method: Dynamic text summary. Interaction: Updates in real-time as services/date/time are chosen. Justification: Provides immediate feedback to the user on their selections. Library: Vanilla JS. 5. Report Info: Confirmación y Pago. Goal: Inform/Action. Viz/Method: Modal dialog with final summary, simulated payment button, and status messages. Interaction: Click to "simulate" payment; displays success/error. Justification: Simulates the critical final step of a booking app. Library: Vanilla JS. 6. Report Info: Acceso al Administrador. Goal: Secure. Viz/Method: Password input field. Interaction: User enters password to unlock admin view. Justification: Basic security gate. Library: HTML/Tailwind/Vanilla JS. 7. Report Info: Reservas y Pagos del Administrador. Goal: Inform/Monitor. Viz/Method: Dynamic table of bookings. Interaction: Toggles visibility of the admin panel; displays booking details and payment status, including client names. Justification: Allows the administrator to see a summary of all simulated bookings with more client detail. Library: HTML/Tailwind/Vanilla JS. CONFIRMATION: NO SVG/Mermaid used. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
      <link rel="stylesheet" href="css.css">
      <link rel="stylesheet" href="js.js">
 </head>
 <body class="text-gray-800">
-
     <div class="container mx-auto p-4 md:p-8">
-
         <header class="text-center mb-8">
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Reserva tu Turno</h1>
             <p class="text-lg text-gray-600 mt-2">Peluquería "El Estilo"</p>
             <button id="toggleAdminViewBtn" class="mt-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full transition-colors duration-300 text-sm">
                 Cambiar a Vista de Administrador
             </button>
-
             <!-- Área de Inicio de Sesión de Administrador -->
             <div id="adminLoginArea" class="admin-login-area hidden flex-col md:flex-row items-center justify-center gap-3 mt-4 p-4 bg-white rounded-lg shadow">
                 <input type="password" id="adminPasswordInput" placeholder="Contraseña de Administrador" class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-auto">
@@ -35,7 +28,6 @@
                 <p id="adminLoginMessage" class="text-red-500 text-sm mt-2 md:mt-0 hidden">Contraseña incorrecta.</p>
             </div>
         </header>
-
         <!-- Contenido de Usuario (Booking Flow) -->
         <div id="userView" class="block">
             <main class="grid lg:grid-cols-2 gap-8 pb-24">
@@ -87,8 +79,7 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Sección de Fecha y Hora -->
+  <!-- Sección de Fecha y Hora -->
                 <div class="card p-6 md:p-8">
                     <h2 class="text-2xl md:text-3xl font-bold mb-4">2. Elige Fecha y Hora</h2>
                     <div class="flex justify-between items-center mb-4">
@@ -111,13 +102,11 @@
                     </div>
                     <div id="calendarGrid" class="grid grid-cols-7 gap-1">
                     </div>
-
                     <h3 class="text-xl md:text-2xl font-bold mt-8 mb-4">Horarios Disponibles</h3>
                     <div id="timeSlots" class="flex flex-wrap gap-3">
                         <p class="text-gray-500" id="noTimeSlotsMessage">Selecciona una fecha para ver los horarios disponibles.</p>
                     </div>
                 </div>
-
                 <!-- Sección de Datos del Cliente -->
                 <div class="lg:col-span-2 card p-6 md:p-8">
                     <h2 class="text-2xl md:text-3xl font-bold mb-4">3. Tus Datos</h2>
@@ -133,8 +122,7 @@
                     </div>
                 </div>
             </main>
-
-            <!-- Barra Inferior de Resumen y Confirmación -->
+ <!-- Barra Inferior de Resumen y Confirmación -->
             <div id="bottomBar" class="fixed-bottom-bar flex items-center justify-between p-4 md:px-8">
                 <div class="flex flex-col md:flex-row md:items-center">
                     <div class="text-lg font-bold text-gray-900 md:mr-4">Total: <span id="totalPrice">$0</span></div>
@@ -147,12 +135,10 @@
                 </button>
             </div>
         </div>
-
-        <!-- Panel de Administración -->
+<!-- Panel de Administración -->
         <div id="adminView" class="admin-panel hidden bg-gray-50 p-6 md:p-8 rounded-lg shadow-inner">
             <h2 class="text-3xl font-bold mb-6 text-gray-900">Panel de Administración: Reservas</h2>
             <p class="text-gray-600 mb-6">Aquí puedes ver todas las reservas simuladas y su estado de pago.</p>
-
             <div id="adminBookingsList" class="overflow-x-auto">
                 <table class="min-w-full bg-white rounded-lg shadow overflow-hidden">
                     <thead class="bg-gray-100 border-b">
@@ -175,9 +161,7 @@
                 </table>
             </div>
         </div>
-
     </div>
-
     <!-- Modal de Confirmación y Pago -->
     <div id="paymentModalOverlay" class="modal-overlay">
         <div class="modal-content">
